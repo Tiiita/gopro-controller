@@ -2,8 +2,8 @@ fn scan() -> Vec<GoPro> {
     todo!("Unimplemented");
 }
 pub struct GoPro {
-    name: String,
-    recording: bool,
+    pub name: String,
+    pub recording: bool,
 }
 
 impl GoPro {

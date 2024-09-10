@@ -1,21 +1,25 @@
 use std::io::{self, Write};
 
 use colored::Colorize;
-use commands::CommandInfo;
+use commands::Context;
+use controller::GoPro;
 
 mod commands;
 mod controller;
 
 fn main() {
+    let mut devices: Vec<GoPro> = Vec::new();
+    let test_device = GoPro::new("TestDevice".into());
+    devices.push(test_device);
     println!();
     println!(
         "Welcome to the gopro controller shell, type {} for help!",
         "'help'".yellow()
     );
-    init_shell();
+    init_shell(&devices);
 }
 
-pub fn init_shell() {
+pub fn init_shell(devices: &Vec<GoPro>) {
     loop {
         print!("=> ");
         io::stdout().flush().expect("Failed to flush stdout");
@@ -25,7 +29,7 @@ pub fn init_shell() {
             .read_line(&mut input)
             .expect("Failed to read stdin line.");
         let input = input.trim();
-        if (input.eq_ignore_ascii_case("exit")) {
+        if input.eq_ignore_ascii_case("exit") {
             println!("Bye.. :)");
             break;
         }
@@ -36,9 +40,10 @@ pub fn init_shell() {
             None => continue,
         };
 
-        let command_info = CommandInfo {
+        let command_info = Context {
             name: command.into(),
             args: parts.collect(),
+            devices: &devices,
         };
 
         match command {
