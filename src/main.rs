@@ -11,6 +11,7 @@ fn main() {
     let mut devices: Vec<GoPro> = Vec::new();
     let test_device = GoPro::new("TestDevice".into());
     devices.push(test_device);
+
     println!();
     println!(
         "Welcome to the gopro controller shell, type {} for help!",

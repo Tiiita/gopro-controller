@@ -23,10 +23,6 @@ impl GoPro {
         println!("Unimplemented");
     }
 
-    pub fn record(&self) {
-
-    }
-    pub fn stop_record(&self) {
-
-    }
+    pub fn record(&self) {}
+    pub fn stop_record(&self) {}
 }
