@@ -1,7 +1,8 @@
+use core::str;
 use std::io::{self, Write};
 
 use colored::Colorize;
-use commands::Context;
+use commands::{CommandService, Context};
 use controller::GoPro;
 
 mod commands;
@@ -21,6 +22,9 @@ fn main() {
 }
 
 pub fn init_shell(devices: &Vec<GoPro>) {
+    let mut cmd_service = CommandService::new();
+    commands::register_commands(&mut cmd_service);
+
     loop {
         print!("=> ");
         io::stdout().flush().expect("Failed to flush stdout");
@@ -30,28 +34,25 @@ pub fn init_shell(devices: &Vec<GoPro>) {
             .read_line(&mut input)
             .expect("Failed to read stdin line.");
         let input = input.trim();
+
         if input.eq_ignore_ascii_case("exit") {
             println!("Bye.. :)");
             break;
         }
 
         let mut parts = input.split_whitespace();
-        let command = match parts.next() {
+        let cmd_name = match parts.next() {
             Some(cmd) => cmd,
             None => continue,
         };
 
-        let command_info = Context {
-            name: command.into(),
+        let context = Context {
+            name: cmd_name.into(),
             args: parts.collect(),
             devices: &devices,
+            cmd_service: &cmd_service,
         };
 
-        match command {
-            "help" => commands::help_cmd(command_info),
-            "record" => commands::record_cmd(command_info),
-            "devices" => commands::devices_cmd(command_info),
-            _ => println!("{}", "Unkown command, type 'help' for help!".red()),
-        }
+        cmd_service.execute(context);
     }
 }

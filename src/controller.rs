@@ -1,5 +1,10 @@
-fn scan() -> Vec<GoPro> {
-    todo!("Unimplemented");
+use std::error::Error;
+
+use btleplug::platform::Manager;
+
+async fn _discover() -> () {
+    let manager = Manager::new().await.unwrap();
+
 }
 pub struct GoPro {
     pub name: String,

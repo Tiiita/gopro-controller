@@ -1,28 +1,31 @@
+use std::process;
+
 use colored::Colorize;
 
 use crate::controller::GoPro;
 
-pub fn help_cmd(context: Context) {
-    let commands = get_commands();
+pub fn help_cmd(context: Context) -> Result<(), CommandError>{
+    let commands = &context.cmd_service.commands;
 
     let max_usage_len = commands
         .iter()
-        .map(|(usage, _)| usage.len())
+        .map(|command| command.usage.len())
         .max()
         .unwrap_or(0);
 
     println!();
     println!("----------- [{}] -----------", "HELP".yellow().bold());
-    for (usage, description) in &commands {
-        println!("{:<width$} - {}", usage, description, width = max_usage_len);
+    for command in commands {
+        println!("{:<width$} - {}", command.usage, command.description, width = max_usage_len);
     }
 
     println!();
+    Ok(())
 }
-pub fn devices_cmd(context: Context) {
+
+pub fn devices_cmd(context: Context) -> Result<(), CommandError> {
     if context.args.is_empty() {
-        print_usage(&context.name);
-        return;
+        return Err(CommandError::Syntax);
     }
     for arg in context.args {
         let arg = arg.to_ascii_lowercase();
@@ -30,8 +33,7 @@ pub fn devices_cmd(context: Context) {
         match arg.as_str() {
             "list" => {
                 if context.devices.is_empty() {
-                    println!("No devices connected");
-                    return;
+                    return Err(CommandError::ExecutionFailed("No devices connected"));
                 }
 
                 println!(
@@ -60,49 +62,110 @@ pub fn devices_cmd(context: Context) {
                 println!("Unimplemented");
             }
             _ => {
-               print_usage(&context.name);
+               return Err(CommandError::Syntax);
             }
         }
+
     }
+    Ok(())
 }
 
-pub fn record_cmd(context: Context) {}
-
-fn get_commands() -> Vec<(&'static str, &'static str)> {
-    vec![
-        ("help", "List all commands and their usage"),
-        (
-            "record <start, stop> <device | all>",
-            "Control record status of device(s)",
-        ),
-        (
-            "devices <list, add, remove, scan> <device | (all)>",
-            "Control and list the connected devices or scan for new ones",
-        ),
-        (
-            "exit",
-            "Exit the program, all devices will hardly disconnect",
-        ),
-    ]
+pub fn record_cmd(_context: Context) -> Result<(), CommandError> {
+    Ok(())
 }
 
-fn print_usage(command_name: &String) {
-    if let Ok(usage) = get_usage(command_name) {
-        let msg = format!("Wrong syntax, use: {}", get_usage(command_name).unwrap());
-        println!("{}", msg.red());
-    }
-}
-fn get_usage(command_name: &String) -> Result<String, String> {
-    for command in get_commands() {
-        if command.0.starts_with(command_name) {
-            return Ok(command.0.into());
-        }
-    }
 
-    return Err("No command found".into());
+enum CommandError<'a> {
+    Syntax,
+    ExecutionFailed(&'a str),
 }
 pub struct Context<'a> {
     pub name: String,
     pub args: Vec<&'a str>,
     pub devices: &'a Vec<GoPro>,
+    pub cmd_service: &'a CommandService,
+}
+
+pub struct Command {
+    pub name: String,
+    pub description: String,
+    pub usage: String,
+    pub executor: Box<dyn Fn(Context) -> Result<(), CommandError>>,
+}
+
+impl Command {
+    pub fn new(name: &str, description: &str, usage: &str, executor: Box<dyn Fn(Context) -> Result<(), CommandError>>) -> Self {
+        Command {
+            name: name.into(),
+            usage: usage.into(),
+            description: description.into(),
+            executor,
+        }
+    }
+}
+pub struct CommandService {
+    pub commands: Vec<Command>,
+}
+impl CommandService {
+    pub fn new() -> Self {
+        CommandService {
+            commands: Vec::new(),
+        }
+    }
+
+    pub fn execute(&self, context: Context) {
+        match self.find_by_name(&context.name) {
+            Some(cmd) => {
+
+               if let Err(error) = (cmd.executor)(context) {
+                match error {
+                    CommandError::ExecutionFailed(msg) => println!("{}", msg.red()),
+                    CommandError::Syntax => println!("{}", format!("Wrong syntax, use: {}", cmd.usage).red()),
+                }
+               }
+
+            },
+            None => println!("{}", "Command not found, use 'help' to list all commands!".red()),
+        }
+    }
+
+    pub fn find_by_name(&self, name: &str) -> Option<&Command> {
+        self.commands
+            .iter()
+            .find(|cmd| cmd.name.to_lowercase() == name.to_lowercase())
+    }
+}
+
+pub fn register_commands(service: &mut CommandService) {
+    let commands = &mut service.commands;
+    commands.push(Command::new(
+        "exit",
+        "Exits the program",
+        "exit",
+        Box::new(|_context| {
+            println!("Bye.. :)");
+            process::exit(0);
+        }),
+    ));
+
+    commands.push(Command::new(
+        "record",
+        "Control record status of device(s)",
+        "record <start, stop> <device | all>",
+        Box::new(|context| record_cmd(context)),
+    ));
+
+    commands.push(Command::new(
+        "devices",
+        "Control and list the connected devices or scan for new ones",
+        "devices <list, add, remove, scan> <device | (all)>",
+        Box::new(|context| devices_cmd(context)),
+    ));
+
+    commands.push(Command::new(
+        "help",
+        "List all commands and their usage",
+        "help",
+        Box::new(|context| help_cmd(context)),
+    ));
 }
