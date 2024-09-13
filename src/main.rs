@@ -46,7 +46,7 @@ pub fn init_shell(devices: &mut Vec<GoPro>) {
         let context = Context {
             name: cmd_name.into(),
             args: parts.collect(),
-            devices: &devices,
+            devices,
             cmd_service: &cmd_service,
         };
 
