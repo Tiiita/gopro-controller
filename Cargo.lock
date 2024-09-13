@@ -410,7 +410,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "gopro_controller"
+name = "goprosh"
 version = "0.1.0"
 dependencies = [
  "btleplug",
