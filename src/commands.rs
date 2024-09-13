@@ -1,9 +1,9 @@
 use std::process;
 
+use btleplug::platform::Adapter;
 use colored::Colorize;
-use futures::executor;
-use gopro_controller as gopro_lib;
-use crate::controller::{self, GoPro};
+use futures::{executor, TryFutureExt};
+use gopro_controller::{self as gopro_lib, GoPro, GoProServices};
 
 fn help_cmd(context: Context) -> Result<(), CommandError> {
     let commands = &context.cmd_service.commands;
@@ -40,11 +40,11 @@ fn device_cmd<'a>(context: Context<'a>) -> Result<(), CommandError<'a>> {
                 return Err(CommandError::ExecutionFailed("No devices connected"));
             }
 
-            println!("{:^15} | {:^10}", "Device Name", "Recording");
-            println!("{:-<15}-+-{:-^15}", "", "");
+            println!("{:^15} | {:^12}", "Device Name", "Recording");
+            println!("{:-<15}-+-{:-^12}", "", "");
             for gopro in context.devices {
-                let recording_icon = if gopro.recording { "✅" } else { "❌" };
-                println!("{:^15} | {:^10}", gopro.name, recording_icon);
+                let recording_icon = if /{ "✅" } else { "❌" };
+                println!("{:^15} | {:^12}", gopro.name, recording_icon);
             }
         }
 
@@ -57,10 +57,10 @@ fn device_cmd<'a>(context: Context<'a>) -> Result<(), CommandError<'a>> {
 
             let arg = arg.unwrap();
     
-            let gopros = executor::block_on(controller::discover());
+            let gopros = executor::block_on(gopro_lib::scan(&mut context.gpl_central)).unwrap();
             if !gopros
                 .iter()
-                .any(|gp| &gp.name.to_lowercase().as_str() == arg)
+                .any(|gp| &gp.to_lowercase() == arg)
             {
                 return Err(CommandError::ExecutionFailed(
                     "Cannot find gopro with given name",
@@ -68,9 +68,9 @@ fn device_cmd<'a>(context: Context<'a>) -> Result<(), CommandError<'a>> {
             }
 
             let mut central = executor::block_on(gopro_lib::init(None)).expect("Unable to get adapter");
-            executor::block_on(gopro_lib::connect(arg.to_string(), &mut central)).expect("Failed to connect");
+            let gopro = executor::block_on(gopro_lib::connect(arg.to_string(), &mut central)).expect("Failed to connect");
 
-            context.devices.push(GoPro::new(arg.to_string()));
+            context.devices.push(gopro);
         }
 
         "remove" => {
@@ -80,13 +80,14 @@ fn device_cmd<'a>(context: Context<'a>) -> Result<(), CommandError<'a>> {
         "scan" => {
             println!("Scanning, this may take some time..");
 
-            let gopros = executor::block_on(controller::discover());
+            let mut central = executor::block_on(gopro_lib::init(None)).unwrap();
+            let gopros = executor::block_on(gopro_lib::scan(&mut central)).unwrap();
             if gopros.is_empty() {
                 return Err(CommandError::ExecutionFailed("No nearby gopros found.."));
             } else {
                 println!("Found nearby gopros:");
                 for ele in gopros {
-                    println!("- {}", ele.name);
+                    println!("- {}", ele);
                 }
             }
         }
@@ -111,6 +112,7 @@ pub struct Context<'a> {
     pub args: Vec<&'a str>,
     pub devices: &'a mut Vec<GoPro>,
     pub cmd_service: &'a CommandService,
+    pub gpl_central: &'a mut Adapter,
 }
 
 pub struct Command {

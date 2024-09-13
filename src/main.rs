@@ -1,30 +1,27 @@
 use std::io::{self, Write};
 
+use btleplug::platform::Adapter;
 use colored::Colorize;
 use commands::{CommandService, Context};
-use controller::GoPro;
+use futures::executor;
+use gopro_controller::GoPro;
+
 
 mod commands;
-mod controller;
 
 #[tokio::main]
 async fn main() {
     let mut devices: Vec<GoPro> = Vec::new();
-    devices.push(GoPro::new("test-device-1".into()));
-
-    let mut test_device_2 = GoPro::new("test-device-2".into());
-    test_device_2.recording = true;
-    devices.push(test_device_2);
-
+    let mut central = executor::block_on(gopro_controller::init(None)).unwrap();
     println!();
     println!(
         "Welcome to the gopro controller shell, type {} for help!",
         "'help'".yellow()
     );
-    init_shell(&mut devices);
+    init_shell(&mut devices, &mut central);
 }
 
-pub fn init_shell(devices: &mut Vec<GoPro>) {
+pub fn init_shell(devices: &mut Vec<GoPro>, central: &mut Adapter) {
     let mut cmd_service = CommandService::new();
     commands::register_commands(&mut cmd_service);
 
@@ -49,6 +46,7 @@ pub fn init_shell(devices: &mut Vec<GoPro>) {
             args: parts.collect(),
             devices,
             cmd_service: &cmd_service,
+            gpl_central: central,
         };
 
         cmd_service.execute(context);
