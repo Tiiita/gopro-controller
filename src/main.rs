@@ -7,7 +7,8 @@ use controller::GoPro;
 mod commands;
 mod controller;
 
-fn main() {
+#[tokio::main]
+async fn main() {
     let mut devices: Vec<GoPro> = Vec::new();
     devices.push(GoPro::new("test-device-1".into()));
 

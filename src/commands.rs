@@ -1,8 +1,8 @@
 use std::process;
 
 use colored::Colorize;
+use futures::executor;
 use gopro_controller::{connect, init};
-
 use crate::controller::{self, GoPro};
 
 fn help_cmd(context: Context) -> Result<(), CommandError> {
@@ -29,12 +29,11 @@ fn help_cmd(context: Context) -> Result<(), CommandError> {
     Ok(())
 }
 
-fn devices_cmd(context: Context) -> Result<(), CommandError> {
+fn device_cmd<'a>(context: Context<'a>) -> Result<(), CommandError<'a>> {
     if context.args.is_empty() {
         return Err(CommandError::Syntax);
     }
 
-    let rt = tokio::runtime::Runtime::new().unwrap();
     let arg_0 = *context.args.get(0).expect("Expected argument at postion 0");
 
     match arg_0 {
@@ -59,7 +58,8 @@ fn devices_cmd(context: Context) -> Result<(), CommandError> {
             }
 
             let arg = arg.unwrap();
-            let gopros = rt.block_on(controller::discover());
+    
+            let gopros = executor::block_on(controller::discover());
             if !gopros
                 .iter()
                 .any(|gp| &gp.name.to_lowercase().as_str() == arg)
@@ -69,9 +69,8 @@ fn devices_cmd(context: Context) -> Result<(), CommandError> {
                 ));
             }
 
-            let mut central = rt.block_on(init(None)).expect("Unable to get adapter");
-            rt.block_on(connect(arg.to_string(), &mut central))
-                .expect("Failed to use block_on");
+            let mut central = executor::block_on(init(None)).expect("Unable to get adapter");
+            executor::block_on(connect(arg.to_string(), &mut central)).expect("Failed to use block_on");
 
             context.devices.push(GoPro::new(arg.to_string()));
         }
@@ -83,7 +82,7 @@ fn devices_cmd(context: Context) -> Result<(), CommandError> {
         "scan" => {
             println!("Scanning, this may take some time..");
 
-            let gopros = rt.block_on(controller::discover());
+            let gopros = executor::block_on(controller::discover());
             if gopros.is_empty() {
                 return Err(CommandError::ExecutionFailed("No nearby gopros found.."));
             } else {
@@ -190,20 +189,20 @@ pub fn register_commands(service: &mut CommandService) {
         "help",
         "List all commands and their usage",
         "help",
-        Box::new(|context| help_cmd(context)),
+        Box::new(help_cmd),
     ));
 
     commands.push(Command::new(
         "record",
         "Control record status of device(s)",
         "record <start, stop> <device | all>",
-        Box::new(|context| record_cmd(context)),
+        Box::new(record_cmd),
     ));
 
     commands.push(Command::new(
         "device",
         "Control and list the connected devices or scan for new ones",
         "device <list, add, remove, scan> <device | (all)>",
-        Box::new(|context| devices_cmd(context)),
+        Box::new(device_cmd),
     ));
 }
