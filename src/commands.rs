@@ -5,7 +5,7 @@ use gopro_controller::{connect, init};
 
 use crate::controller::{self, GoPro};
 
-fn help_cmd(context: Context) -> Result<(), CommandError>{
+fn help_cmd(context: Context) -> Result<(), CommandError> {
     let commands = &context.cmd_service.commands;
 
     let max_usage_len = commands
@@ -17,7 +17,12 @@ fn help_cmd(context: Context) -> Result<(), CommandError>{
     println!();
     println!("----------- [{}] -----------", "HELP".yellow().bold());
     for command in commands {
-        println!("{:<width$} - {}", command.usage, command.description, width = max_usage_len);
+        println!(
+            "{:<width$} - {}",
+            command.usage,
+            command.description,
+            width = max_usage_len
+        );
     }
 
     println!();
@@ -32,64 +37,66 @@ fn devices_cmd(context: Context) -> Result<(), CommandError> {
     let rt = tokio::runtime::Runtime::new().unwrap();
     let arg_0 = *context.args.get(0).expect("Expected argument at postion 0");
 
-        match arg_0 {
-            "list" => {
-                if context.devices.is_empty() {
-                    return Err(CommandError::ExecutionFailed("No devices connected"));
-                }
-
-                println!(
-                    "{:^15} | {:^10}",
-                    "Device Name", "Recording"
-                );
-                println!("{:-<15}-+-{:-^15}", "", "");
-                for gopro in context.devices {
-                    let recording_icon = if gopro.recording { "✅" } else { "❌" };
-                    println!(
-                        "{:^15} | {:^10}",
-                        gopro.name, recording_icon
-                    );
-                }
+    match arg_0 {
+        "list" => {
+            if context.devices.is_empty() {
+                return Err(CommandError::ExecutionFailed("No devices connected"));
             }
 
-            "add" => {
-                let arg = context.args.get(1);
-
-                if arg.is_none() {
-                    return Err(CommandError::Syntax);
-                }
-
-                let arg = arg.unwrap();
-                let gopros = rt.block_on(controller::discover());
-                if !gopros.iter().any(|gp| &gp.name.to_lowercase().as_str() == arg) {
-                    return Err(CommandError::ExecutionFailed("Cannot find gopro with given name"));
-                }
-
-                let mut central = rt.block_on(init(None)).expect("Unable to get adapter");
-                rt.block_on(connect(arg.to_string(), &mut central)).expect("Failed to use block_on");
-                
-                context.devices.push(GoPro::new(arg.to_string()));
-            }
-
-            "remove" => {
-                println!("Unimplemented");
-            }
-
-            "scan" => {
-                println!("Scanning, this may take some time..");
-            
-                let gopros = rt.block_on(controller::discover());
-                if gopros.is_empty() { return Err(CommandError::ExecutionFailed("No nearby gopros found..")) } else {
-                    println!("Found nearby gopros:");
-                    for ele in gopros {
-                        println!("- {}", ele.name);
-                    }
-                }
-            }
-            _ => {
-               return Err(CommandError::Syntax);
+            println!("{:^15} | {:^10}", "Device Name", "Recording");
+            println!("{:-<15}-+-{:-^15}", "", "");
+            for gopro in context.devices {
+                let recording_icon = if gopro.recording { "✅" } else { "❌" };
+                println!("{:^15} | {:^10}", gopro.name, recording_icon);
             }
         }
+
+        "add" => {
+            let arg = context.args.get(1);
+
+            if arg.is_none() {
+                return Err(CommandError::Syntax);
+            }
+
+            let arg = arg.unwrap();
+            let gopros = rt.block_on(controller::discover());
+            if !gopros
+                .iter()
+                .any(|gp| &gp.name.to_lowercase().as_str() == arg)
+            {
+                return Err(CommandError::ExecutionFailed(
+                    "Cannot find gopro with given name",
+                ));
+            }
+
+            let mut central = rt.block_on(init(None)).expect("Unable to get adapter");
+            rt.block_on(connect(arg.to_string(), &mut central))
+                .expect("Failed to use block_on");
+
+            context.devices.push(GoPro::new(arg.to_string()));
+        }
+
+        "remove" => {
+            println!("Unimplemented");
+        }
+
+        "scan" => {
+            println!("Scanning, this may take some time..");
+
+            let gopros = rt.block_on(controller::discover());
+            if gopros.is_empty() {
+                return Err(CommandError::ExecutionFailed("No nearby gopros found.."));
+            } else {
+                println!("Found nearby gopros:");
+                for ele in gopros {
+                    println!("- {}", ele.name);
+                }
+            }
+        }
+        _ => {
+            return Err(CommandError::Syntax);
+        }
+    }
 
     Ok(())
 }
@@ -97,7 +104,6 @@ fn devices_cmd(context: Context) -> Result<(), CommandError> {
 fn record_cmd(_context: Context) -> Result<(), CommandError> {
     Ok(())
 }
-
 
 enum CommandError<'a> {
     Syntax,
@@ -118,7 +124,12 @@ pub struct Command {
 }
 
 impl Command {
-     fn new(name: &str, description: &str, usage: &str, executor: Box<dyn Fn(Context) -> Result<(), CommandError>>) -> Self {
+    fn new(
+        name: &str,
+        description: &str,
+        usage: &str,
+        executor: Box<dyn Fn(Context) -> Result<(), CommandError>>,
+    ) -> Self {
         Command {
             name: name.into(),
             usage: usage.into(),
@@ -140,16 +151,19 @@ impl CommandService {
     pub fn execute(&self, context: Context) {
         match self.find_by_name(&context.name) {
             Some(cmd) => {
-
-               if let Err(error) = (cmd.executor)(context) {
-                match error {
-                    CommandError::ExecutionFailed(msg) => println!("{}", msg.red()),
-                    CommandError::Syntax => println!("{}", format!("Wrong syntax, use: {}", cmd.usage).red()),
+                if let Err(error) = (cmd.executor)(context) {
+                    match error {
+                        CommandError::ExecutionFailed(msg) => println!("{}", msg.red()),
+                        CommandError::Syntax => {
+                            println!("{}", format!("Wrong syntax, use: {}", cmd.usage).red())
+                        }
+                    }
                 }
-               }
-
-            },
-            None => println!("{}", "Command not found, use 'help' to list all commands!".red()),
+            }
+            None => println!(
+                "{}",
+                "Command not found, use 'help' to list all commands!".red()
+            ),
         }
     }
 
