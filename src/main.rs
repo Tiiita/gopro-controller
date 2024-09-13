@@ -1,11 +1,11 @@
 use std::io::{self, Write};
 
 use colored::Colorize;
-use commands::{CommandService, Context};
-use controller::GoPro;
-
-mod commands;
-mod controller;
+use goprosh::{
+    command::{Command, CommandService, Context},
+    commands::{device_cmd, help_cmd, record_cmd},
+    controller::GoPro,
+};
 
 #[tokio::main]
 async fn main() {
@@ -26,7 +26,7 @@ async fn main() {
 
 pub fn init_shell(devices: &mut Vec<GoPro>) {
     let mut cmd_service = CommandService::new();
-    commands::register_commands(&mut cmd_service);
+    register_commands(&mut cmd_service);
 
     loop {
         print!("=> ");
@@ -53,4 +53,38 @@ pub fn init_shell(devices: &mut Vec<GoPro>) {
 
         cmd_service.execute(context);
     }
+}
+
+pub fn register_commands(service: &mut CommandService) {
+    let commands = &mut service.commands;
+    commands.push(Command::new(
+        "exit",
+        "Exits the program",
+        "exit",
+        |_context| {
+            println!("Bye.. :)");
+            std::process::exit(0);
+        },
+    ));
+
+    commands.push(Command::new(
+        "help",
+        "List all commands and their usage",
+        "help",
+        help_cmd,
+    ));
+
+    commands.push(Command::new(
+        "record",
+        "Control record status of device(s)",
+        "record <start, stop> <device | all>",
+        record_cmd,
+    ));
+
+    commands.push(Command::new(
+        "device",
+        "Control and list the connected devices or scan for new ones",
+        "device <list, add, remove, scan> <device | (all)>",
+        device_cmd,
+    ));
 }

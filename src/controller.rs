@@ -1,8 +1,8 @@
-use gopro_controller::{init, scan};
+use gopro_controller as gp_ctrl;
 
 pub async fn discover() -> Vec<GoPro> {
-    let mut central = init(None).await.unwrap();
-    let devices = scan(&mut central).await.unwrap();
+    let mut central = gp_ctrl::init(None).await.unwrap();
+    let devices = gp_ctrl::scan(&mut central).await.unwrap();
 
     devices
         .iter()
