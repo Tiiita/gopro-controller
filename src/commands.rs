@@ -1,9 +1,9 @@
 use colored::Colorize;
 use futures::executor;
 use gopro_controller as gp_ctrl;
-use crate::{command::{CommandError, Context}, controller::{self, GoPro}};
+use crate::{command::{CommandError, CommandResult, Context}, controller::{self, GoPro}};
 
-pub fn help_cmd(context: Context) -> Result<(), CommandError> {
+pub fn help_cmd(context: Context) -> CommandResult {
     let commands = &context.cmd_service.commands;
 
     let max_usage_len = commands
@@ -27,7 +27,7 @@ pub fn help_cmd(context: Context) -> Result<(), CommandError> {
     Ok(())
 }
 
-pub fn device_cmd<'a>(context: Context<'a>) -> Result<(), CommandError<'a>> {
+pub fn device_cmd<'a>(context: Context<'a>) -> CommandResult<'a> {
     if context.args.is_empty() {
         return Err(CommandError::Syntax);
     }
@@ -96,6 +96,6 @@ pub fn device_cmd<'a>(context: Context<'a>) -> Result<(), CommandError<'a>> {
     Ok(())
 }
 
-pub fn record_cmd(_context: Context) -> Result<(), CommandError> {
+pub fn record_cmd(_context: Context) -> CommandResult {
     Ok(())
 }
