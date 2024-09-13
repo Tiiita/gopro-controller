@@ -2,6 +2,8 @@ use colored::Colorize;
 
 use crate::controller::GoPro;
 
+pub type CommandResult<'a> = Result<(), CommandError<'a>>;
+
 pub enum CommandError<'a> {
     Syntax,
     ExecutionFailed(&'a str),
@@ -17,7 +19,7 @@ pub struct Command {
     pub name: String,
     pub description: String,
     pub usage: String,
-    executor: Box<dyn Fn(Context) -> Result<(), CommandError>>,
+    executor: Box<dyn Fn(Context) -> CommandResult>,
 }
 
 impl Command {
@@ -28,7 +30,7 @@ impl Command {
         executor: F,
     ) -> Self
     where for <'a>
-        F: Fn(Context) -> Result<(), CommandError> + 'a,
+        F: Fn(Context) -> CommandResult + 'a,
     {
         Command {
             name: name.into(),
@@ -37,7 +39,7 @@ impl Command {
             executor: Box::new(executor),
         }
     }
-    pub fn execute<'a>(&self, context: Context<'a>) -> Result<(), CommandError<'a>> {
+    pub fn execute<'a>(&self, context: Context<'a>) -> CommandResult<'a> {
         (self.executor)(context)
     }
 }
