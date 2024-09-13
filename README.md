@@ -1,3 +1,3 @@
-# gopro-controller
+# goprosh
 
-A project written in rust to connect and control gorpos via the terminal (such a cool way).
+A command line app written in Rust to connect and control gopros via the terminal (like a real hackerman).
