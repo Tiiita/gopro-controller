@@ -8,7 +8,7 @@ pub enum CommandError<'a> {
     Syntax,
     ExecutionFailed(&'a str),
 }
-pub struct Context<'a> {
+pub struct CommandContext<'a> {
     pub name: String,
     pub args: Vec<&'a str>,
     pub devices: &'a mut Vec<GoPro>,
@@ -19,7 +19,7 @@ pub struct Command {
     pub name: String,
     pub description: String,
     pub usage: String,
-    executor: Box<dyn Fn(Context) -> CommandResult>,
+    executor: Box<dyn Fn(CommandContext) -> CommandResult>,
 }
 
 impl Command {
@@ -30,7 +30,7 @@ impl Command {
         executor: F,
     ) -> Self
     where for <'a>
-        F: Fn(Context) -> CommandResult + 'a,
+        F: Fn(CommandContext) -> CommandResult + 'a,
     {
         Command {
             name: name.into(),
@@ -39,7 +39,7 @@ impl Command {
             executor: Box::new(executor),
         }
     }
-    pub fn execute<'a>(&self, context: Context<'a>) -> CommandResult<'a> {
+    pub fn execute<'a>(&self, context: CommandContext<'a>) -> CommandResult<'a> {
         (self.executor)(context)
     }
 }
@@ -53,7 +53,7 @@ impl CommandService {
         }
     }
 
-    pub fn execute(&self, context: Context) {
+    pub fn execute(&self, context: CommandContext) {
         match self.find_by_name(&context.name) {
             Some(cmd) => {
                 if let Err(error) = cmd.execute(context) {

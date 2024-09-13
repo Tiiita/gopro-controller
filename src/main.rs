@@ -2,7 +2,7 @@ use std::io::{self, Write};
 
 use colored::Colorize;
 use goprosh::{
-    command::{Command, CommandService, Context},
+    command::{Command, CommandService, CommandContext},
     commands::{device_cmd, help_cmd, record_cmd},
     controller::GoPro,
 };
@@ -44,7 +44,7 @@ pub fn init_shell(devices: &mut Vec<GoPro>) {
             None => continue,
         };
 
-        let context = Context {
+        let context = CommandContext {
             name: cmd_name.into(),
             args: parts.collect(),
             devices,
