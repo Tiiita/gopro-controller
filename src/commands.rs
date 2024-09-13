@@ -2,7 +2,7 @@ use std::process;
 
 use colored::Colorize;
 use futures::executor;
-use gopro_controller::{connect, init};
+use gopro_controller as gopro_lib;
 use crate::controller::{self, GoPro};
 
 fn help_cmd(context: Context) -> Result<(), CommandError> {
@@ -34,9 +34,7 @@ fn device_cmd<'a>(context: Context<'a>) -> Result<(), CommandError<'a>> {
         return Err(CommandError::Syntax);
     }
 
-    let arg_0 = *context.args.get(0).expect("Expected argument at postion 0");
-
-    match arg_0 {
+    match context.args[0] {
         "list" => {
             if context.devices.is_empty() {
                 return Err(CommandError::ExecutionFailed("No devices connected"));
@@ -69,8 +67,8 @@ fn device_cmd<'a>(context: Context<'a>) -> Result<(), CommandError<'a>> {
                 ));
             }
 
-            let mut central = executor::block_on(init(None)).expect("Unable to get adapter");
-            executor::block_on(connect(arg.to_string(), &mut central)).expect("Failed to use block_on");
+            let mut central = executor::block_on(gopro_lib::init(None)).expect("Unable to get adapter");
+            executor::block_on(gopro_lib::connect(arg.to_string(), &mut central)).expect("Failed to connect");
 
             context.devices.push(GoPro::new(arg.to_string()));
         }
