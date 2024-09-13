@@ -20,10 +20,10 @@ fn main() {
         "Welcome to the gopro controller shell, type {} for help!",
         "'help'".yellow()
     );
-    init_shell(&devices);
+    init_shell(&mut devices);
 }
 
-pub fn init_shell(devices: &Vec<GoPro>) {
+pub fn init_shell(devices: &mut Vec<GoPro>) {
     let mut cmd_service = CommandService::new();
     commands::register_commands(&mut cmd_service);
 

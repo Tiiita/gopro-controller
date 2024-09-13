@@ -1,6 +1,8 @@
-use std::process;
+use core::arch;
+use std::{f32::consts::E, process};
 
 use colored::Colorize;
+use gopro_controller::{connect, init};
 
 use crate::controller::{self, GoPro};
 
@@ -23,16 +25,15 @@ fn help_cmd(context: Context) -> Result<(), CommandError>{
     Ok(())
 }
 
-fn devices_cmd(context: Context) -> Result<(), CommandError> {
+fn devices_cmd(mut context: Context) -> Result<(), CommandError> {
     if context.args.is_empty() {
         return Err(CommandError::Syntax);
     }
 
     let rt = tokio::runtime::Runtime::new().unwrap();
-    for arg in context.args {
-        let arg = arg.to_ascii_lowercase();
+    let arg_0 = context.args.get(0).expect("Expected argument at postion 0");
 
-        match arg.as_str() {
+        match *arg_0 {
             "list" => {
                 if context.devices.is_empty() {
                     return Err(CommandError::ExecutionFailed("No devices connected"));
@@ -42,7 +43,7 @@ fn devices_cmd(context: Context) -> Result<(), CommandError> {
                     "{:^15} | {:^10}",
                     "Device Name", "Recording"
                 );
-                println!("{:-<15}-+-{:-^15}-+-{:-<10}", "", "", "");
+                println!("{:-<15}-+-{:-^15}", "", "");
                 for gopro in context.devices {
                     let recording_icon = if gopro.recording { "✅" } else { "❌" };
                     println!(
@@ -53,6 +54,22 @@ fn devices_cmd(context: Context) -> Result<(), CommandError> {
             }
 
             "add" => {
+                let arg = context.args.get(1);
+
+                if arg.is_none() {
+                    return Err(CommandError::Syntax);
+                }
+
+                let arg = arg.unwrap();
+                let gopros = rt.block_on(controller::discover());
+                if !gopros.iter().any(|gp| &gp.name.to_lowercase().as_str() == arg) {
+                    return Err(CommandError::ExecutionFailed("Cannot find gopro with given name"));
+                }
+
+                let mut central = rt.block_on(init(None)).expect("Unable to get adapter");
+                rt.block_on(connect(arg.to_string(), &mut central)).expect("Failed to use block_on");
+
+                context.devices.push(GoPro::new((*arg).into()));
             }
 
             "remove" => {
@@ -75,7 +92,6 @@ fn devices_cmd(context: Context) -> Result<(), CommandError> {
             }
         }
 
-    }
     Ok(())
 }
 
@@ -172,9 +188,9 @@ pub fn register_commands(service: &mut CommandService) {
     ));
 
     commands.push(Command::new(
-        "devices",
+        "device",
         "Control and list the connected devices or scan for new ones",
-        "devices <list, add, remove, scan> <device | (all)>",
+        "device <list, add, remove, scan> <device | (all)>",
         Box::new(|context| devices_cmd(context)),
     ));
 }

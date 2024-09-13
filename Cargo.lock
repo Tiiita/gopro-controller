@@ -413,6 +413,7 @@ dependencies = [
 name = "gopro_controller"
 version = "0.1.0"
 dependencies = [
+ "btleplug",
  "colored",
  "gopro-controller",
  "tokio",
