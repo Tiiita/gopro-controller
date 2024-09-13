@@ -1,5 +1,4 @@
-use core::arch;
-use std::{f32::consts::E, process};
+use std::process;
 
 use colored::Colorize;
 use gopro_controller::{connect, init};
@@ -25,15 +24,15 @@ fn help_cmd(context: Context) -> Result<(), CommandError>{
     Ok(())
 }
 
-fn devices_cmd(mut context: Context) -> Result<(), CommandError> {
+fn devices_cmd(context: Context) -> Result<(), CommandError> {
     if context.args.is_empty() {
         return Err(CommandError::Syntax);
     }
 
     let rt = tokio::runtime::Runtime::new().unwrap();
-    let arg_0 = context.args.get(0).expect("Expected argument at postion 0");
+    let arg_0 = *context.args.get(0).expect("Expected argument at postion 0");
 
-        match *arg_0 {
+        match arg_0 {
             "list" => {
                 if context.devices.is_empty() {
                     return Err(CommandError::ExecutionFailed("No devices connected"));
@@ -68,8 +67,8 @@ fn devices_cmd(mut context: Context) -> Result<(), CommandError> {
 
                 let mut central = rt.block_on(init(None)).expect("Unable to get adapter");
                 rt.block_on(connect(arg.to_string(), &mut central)).expect("Failed to use block_on");
-
-                context.devices.push(GoPro::new((*arg).into()));
+                
+                context.devices.push(GoPro::new(arg.to_string()));
             }
 
             "remove" => {
@@ -107,7 +106,7 @@ enum CommandError<'a> {
 pub struct Context<'a> {
     pub name: String,
     pub args: Vec<&'a str>,
-    pub devices: &'a Vec<GoPro>,
+    pub devices: &'a mut Vec<GoPro>,
     pub cmd_service: &'a CommandService,
 }
 
