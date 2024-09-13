@@ -2,9 +2,9 @@ use std::process;
 
 use colored::Colorize;
 
-use crate::controller::GoPro;
+use crate::controller::{self, GoPro};
 
-pub fn help_cmd(context: Context) -> Result<(), CommandError>{
+fn help_cmd(context: Context) -> Result<(), CommandError>{
     let commands = &context.cmd_service.commands;
 
     let max_usage_len = commands
@@ -23,10 +23,12 @@ pub fn help_cmd(context: Context) -> Result<(), CommandError>{
     Ok(())
 }
 
-pub fn devices_cmd(context: Context) -> Result<(), CommandError> {
+fn devices_cmd(context: Context) -> Result<(), CommandError> {
     if context.args.is_empty() {
         return Err(CommandError::Syntax);
     }
+
+    let rt = tokio::runtime::Runtime::new().unwrap();
     for arg in context.args {
         let arg = arg.to_ascii_lowercase();
 
@@ -37,21 +39,20 @@ pub fn devices_cmd(context: Context) -> Result<(), CommandError> {
                 }
 
                 println!(
-                    "{:^15} | {:^15} | {:^10}",
-                    "Device Name", "IP Address", "Recording"
+                    "{:^15} | {:^10}",
+                    "Device Name", "Recording"
                 );
                 println!("{:-<15}-+-{:-^15}-+-{:-<10}", "", "", "");
                 for gopro in context.devices {
                     let recording_icon = if gopro.recording { "✅" } else { "❌" };
                     println!(
-                        "{:^15} | {:^15} | {:^10}",
-                        gopro.name, "unknown", recording_icon
+                        "{:^15} | {:^10}",
+                        gopro.name, recording_icon
                     );
                 }
             }
 
             "add" => {
-                println!("Unimplemented");
             }
 
             "remove" => {
@@ -59,7 +60,15 @@ pub fn devices_cmd(context: Context) -> Result<(), CommandError> {
             }
 
             "scan" => {
-                println!("Unimplemented");
+                println!("Scanning, this may take some time..");
+            
+                let gopros = rt.block_on(controller::discover());
+                if gopros.is_empty() { return Err(CommandError::ExecutionFailed("No nearby gopros found..")) } else {
+                    println!("Found nearby gopros:");
+                    for ele in gopros {
+                        println!("- {}", ele.name);
+                    }
+                }
             }
             _ => {
                return Err(CommandError::Syntax);
@@ -70,7 +79,7 @@ pub fn devices_cmd(context: Context) -> Result<(), CommandError> {
     Ok(())
 }
 
-pub fn record_cmd(_context: Context) -> Result<(), CommandError> {
+fn record_cmd(_context: Context) -> Result<(), CommandError> {
     Ok(())
 }
 
@@ -90,11 +99,11 @@ pub struct Command {
     pub name: String,
     pub description: String,
     pub usage: String,
-    pub executor: Box<dyn Fn(Context) -> Result<(), CommandError>>,
+    executor: Box<dyn Fn(Context) -> Result<(), CommandError>>,
 }
 
 impl Command {
-    pub fn new(name: &str, description: &str, usage: &str, executor: Box<dyn Fn(Context) -> Result<(), CommandError>>) -> Self {
+     fn new(name: &str, description: &str, usage: &str, executor: Box<dyn Fn(Context) -> Result<(), CommandError>>) -> Self {
         Command {
             name: name.into(),
             usage: usage.into(),
@@ -149,6 +158,13 @@ pub fn register_commands(service: &mut CommandService) {
     ));
 
     commands.push(Command::new(
+        "help",
+        "List all commands and their usage",
+        "help",
+        Box::new(|context| help_cmd(context)),
+    ));
+
+    commands.push(Command::new(
         "record",
         "Control record status of device(s)",
         "record <start, stop> <device | all>",
@@ -160,12 +176,5 @@ pub fn register_commands(service: &mut CommandService) {
         "Control and list the connected devices or scan for new ones",
         "devices <list, add, remove, scan> <device | (all)>",
         Box::new(|context| devices_cmd(context)),
-    ));
-
-    commands.push(Command::new(
-        "help",
-        "List all commands and their usage",
-        "help",
-        Box::new(|context| help_cmd(context)),
     ));
 }

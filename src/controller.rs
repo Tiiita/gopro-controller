@@ -1,11 +1,15 @@
-use std::error::Error;
+use gopro_controller::{init, scan};
 
-use btleplug::platform::Manager;
+pub async fn discover() -> Vec<GoPro> {
+let mut central = init(None).await.unwrap();
+let devices = scan(&mut central).await.unwrap();
 
-async fn _discover() -> () {
-    let manager = Manager::new().await.unwrap();
-
+devices
+.iter()
+.map(|name| GoPro::new(name.clone()))
+.collect()
 }
+
 pub struct GoPro {
     pub name: String,
     pub recording: bool,

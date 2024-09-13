@@ -1,4 +1,3 @@
-use core::str;
 use std::io::{self, Write};
 
 use colored::Colorize;
@@ -10,8 +9,11 @@ mod controller;
 
 fn main() {
     let mut devices: Vec<GoPro> = Vec::new();
-    let test_device = GoPro::new("TestDevice".into());
-    devices.push(test_device);
+    devices.push(GoPro::new("test-device-1".into()));
+
+    let mut test_device_2 = GoPro::new("test-device-2".into());
+    test_device_2.recording = true;
+    devices.push(test_device_2);
 
     println!();
     println!(
@@ -34,11 +36,6 @@ pub fn init_shell(devices: &Vec<GoPro>) {
             .read_line(&mut input)
             .expect("Failed to read stdin line.");
         let input = input.trim();
-
-        if input.eq_ignore_ascii_case("exit") {
-            println!("Bye.. :)");
-            break;
-        }
 
         let mut parts = input.split_whitespace();
         let cmd_name = match parts.next() {
