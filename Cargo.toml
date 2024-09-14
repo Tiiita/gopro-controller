@@ -4,9 +4,8 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-btleplug = "0.11.5"
 colored = "2.1.0"
 futures = "0.3.30"
-gopro-controller = { version = "0.10.2", features = ["query"] }
 tokio = "1.40.0"
 wifi-rs = "0.2.4"
+wifiscanner = "0.5.1"

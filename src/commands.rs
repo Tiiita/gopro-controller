@@ -1,8 +1,13 @@
-use crate::command::{CommandContext, CommandError, CommandResult};
+use std::f32::consts::E;
+
+use crate::{
+    command::{CommandContext, CommandError, CommandResult},
+    gopro::{self, GoPro},
+};
 
 use colored::Colorize;
-use futures::executor;
-use gopro_controller as gpc;
+use futures::{executor, SinkExt};
+use wifiscanner::Wifi;
 
 pub fn help_cmd(context: CommandContext) -> CommandResult {
     let commands = &context.cmd_service.commands;
@@ -41,12 +46,8 @@ pub fn device_cmd(context: CommandContext) -> CommandResult {
 
             println!("{:^15} | {:^10}", "Device Name", "Recording");
             println!("{:-<15}-+-{:-^15}", "", "");
-            for _gopro in context.devices {
-                let recording  = "unimplemented";
-
-                let device_name = "unimplemented";
-                //let recording_icon = if recording { "✅" } else { "❌" };
-                println!("{:^15} | {:^10}", device_name, recording);
+            for gopro in context.devices {
+                println!("{:^15} | {:^10}", gopro.name, if gopro.recording { "✅" } else { "❌" });
             }
         }
 
@@ -57,20 +58,19 @@ pub fn device_cmd(context: CommandContext) -> CommandResult {
                 return Err(CommandError::Syntax);
             }
 
-            let arg = arg.unwrap();
+            let arg = arg.unwrap().to_lowercase();
 
-            let gopros =
-                executor::block_on(gopro_controller::scan(context.gpc_central)).unwrap();
-            if !gopros.iter().any(|gp| &gp.to_lowercase().as_str() == arg) {
+            let access_points =
+                wifiscanner::scan().expect("Failed to scan nearby wifi access points");
+
+            if !access_points.iter().any(|gp| &gp.ssid.to_lowercase() == &arg) {
                 return Err(CommandError::ExecutionFailed(
                     "Cannot find gopro with given name",
                 ));
             }
-
-            let mut central =
-                executor::block_on(gpc::init(None)).expect("Unable to get adapter");
-            let gopro = executor::block_on(gpc::connect(arg.to_string(), &mut central))
-                .expect("Failed to connect");
+            
+            let wifi = access_points.iter().find(|wifi| &wifi.ssid.to_lowercase() == &arg).unwrap();
+            let gopro = GoPro::new(wifi.ssid, wifi);
 
             context.devices.push(gopro);
         }
@@ -82,16 +82,27 @@ pub fn device_cmd(context: CommandContext) -> CommandResult {
         "scan" => {
             println!("Scanning, this may take some time..");
 
-            let gopros =
-                executor::block_on(gopro_controller::scan(context.gpc_central)).unwrap();
+            let access_points =
+                wifiscanner::scan().expect("Failed to scan nearby wifi access points");
 
-            if gopros.is_empty() {
-                return Err(CommandError::ExecutionFailed("No nearby gopros found.."));
-            } else {
-                println!("Found nearby gopros:");
-                for ele in gopros {
-                    println!("- {}", ele);
-                }
+            if access_points.is_empty() {
+                return Err(CommandError::ExecutionFailed(
+                    "No nearby wifi access points found..",
+                ));
+            }
+            println!("{:^15} | {:^15} | {:^15}", "Device", "Strength", "Seems GoPro");
+            println!("{:^15}-+-{:^15}-+-{:^15}", "", "", "");
+            for ele in access_points {
+                println!(
+                    "{:^15} | {:^15} | {:^15}",
+                    ele.ssid,
+                    ele.signal_level,
+                    if ele.ssid.to_lowercase().starts_with("gp") {
+                        "✅"
+                    } else {
+                        "❌"
+                    }
+                );
             }
         }
         _ => {

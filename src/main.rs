@@ -3,16 +3,14 @@ use std::io::{self, Write};
 use btleplug::platform::Adapter;
 use colored::Colorize;
 use futures::executor;
-use gopro_controller::GoPro;
 use goprosh::{
-    command::{Command, CommandService, CommandContext},
-    commands::{device_cmd, help_cmd, record_cmd},
+    command::{Command, CommandContext, CommandService},
+    commands::{device_cmd, help_cmd, record_cmd}, gopro::{self, GoPro},
 };
 
 #[tokio::main]
 async fn main() {
     let mut devices: Vec<GoPro> = Vec::new();
-    let mut central = executor::block_on(gopro_controller::init(None)).unwrap();
 
     println!();
     println!(
@@ -47,7 +45,6 @@ pub fn init_shell(devices: &mut Vec<GoPro>, gpc_central: &mut Adapter) {
             args: parts.collect(),
             devices,
             cmd_service: &cmd_service,
-            gpc_central,
         };
 
         cmd_service.execute(context);

@@ -1,7 +1,6 @@
-use btleplug::platform::Adapter;
 use colored::Colorize;
-use gopro_controller::GoPro;
 
+use crate::gopro::GoPro;
 pub type CommandResult<'a> = Result<(), CommandError<'a>>;
 
 pub enum CommandError<'a> {
@@ -13,7 +12,6 @@ pub struct CommandContext<'a> {
     pub args: Vec<&'a str>,
     pub devices: &'a mut Vec<GoPro>,
     pub cmd_service: &'a CommandService,
-    pub gpc_central: &'a mut Adapter,
 }
 
 pub struct Command {
