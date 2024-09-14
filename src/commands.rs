@@ -1,7 +1,5 @@
-use crate::{
-    command::{CommandContext, CommandError, CommandResult},
-    controller::{self, GoPro},
-};
+use crate::command::{CommandContext, CommandError, CommandResult};
+
 use colored::Colorize;
 use futures::executor;
 use gopro_controller as gp_ctrl;
@@ -44,9 +42,17 @@ pub fn device_cmd<'a>(context: CommandContext<'a>) -> CommandResult<'a> {
             println!("{:^15} | {:^10}", "Device Name", "Recording");
             println!("{:-<15}-+-{:-^15}", "", "");
             for gopro in context.devices {
-                let recording = executor::block_on(gopro_controller).unwrap();
-                let recording_icon = if recording. { "✅" } else { "❌" };
-                println!("{:^15} | {:^10}", gopro., recording_icon);
+                let recording =
+                    executor::block_on(gopro.query(&gp_ctrl::GoProQuery::GetAllStatusValues))
+                        .unwrap()
+                        .status_id;
+
+                let device_name =
+                    executor::block_on(gopro.query(&gp_ctrl::GoProQuery::))
+                        .unwrap()
+                        .status_id;
+                //let recording_icon = if recording { "✅" } else { "❌" };
+                println!("{:^15} | {:^10}", device_name, recording);
             }
         }
 
@@ -59,11 +65,9 @@ pub fn device_cmd<'a>(context: CommandContext<'a>) -> CommandResult<'a> {
 
             let arg = arg.unwrap();
 
-            let gopros = executor::block_on(gopro_controller::scan(&mut context.gpc_central)).unwrap();
-            if !gopros
-                .iter()
-                .any(|gp| &gp.to_lowercase().as_str() == arg)
-            {
+            let gopros =
+                executor::block_on(gopro_controller::scan(&mut context.gpc_central)).unwrap();
+            if !gopros.iter().any(|gp| &gp.to_lowercase().as_str() == arg) {
                 return Err(CommandError::ExecutionFailed(
                     "Cannot find gopro with given name",
                 ));
