@@ -13,7 +13,7 @@ pub struct CommandContext<'a> {
     pub args: Vec<&'a str>,
     pub devices: &'a mut Vec<GoPro>,
     pub cmd_service: &'a CommandService,
-    pub gpc_central: Adapter,
+    pub gpc_central: &'a mut Adapter,
 }
 
 pub struct Command {

@@ -3,10 +3,10 @@ use std::io::{self, Write};
 use btleplug::platform::Adapter;
 use colored::Colorize;
 use futures::executor;
+use gopro_controller::GoPro;
 use goprosh::{
     command::{Command, CommandService, CommandContext},
     commands::{device_cmd, help_cmd, record_cmd},
-    controller::GoPro,
 };
 
 #[tokio::main]
