@@ -1,15 +1,12 @@
 use std::io::{self, Write};
 
-use btleplug::platform::Adapter;
 use colored::Colorize;
-use futures::executor;
 use goprosh::{
     command::{Command, CommandContext, CommandService},
-    commands::{device_cmd, help_cmd, record_cmd}, gopro::{self, GoPro},
+    commands::{device_cmd, help_cmd, record_cmd}, gopro::GoPro,
 };
 
-#[tokio::main]
-async fn main() {
+fn main() {
     let mut devices: Vec<GoPro> = Vec::new();
 
     println!();
@@ -17,10 +14,10 @@ async fn main() {
         "Welcome to the gopro controller shell, type {} for help!",
         "'help'".yellow()
     );
-    init_shell(&mut devices, &mut central);
+    init_shell(&mut devices);
 }
 
-pub fn init_shell(devices: &mut Vec<GoPro>, gpc_central: &mut Adapter) {
+pub fn init_shell(devices: &mut Vec<GoPro>) {
     let mut cmd_service = CommandService::new();
     register_commands(&mut cmd_service);
 

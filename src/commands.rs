@@ -1,13 +1,7 @@
-use std::f32::consts::E;
 
-use crate::{
-    command::{CommandContext, CommandError, CommandResult},
-    gopro::{self, GoPro},
-};
+use crate::command::{CommandContext, CommandError, CommandResult};
 
 use colored::Colorize;
-use futures::{executor, SinkExt};
-use wifiscanner::Wifi;
 
 pub fn help_cmd(context: CommandContext) -> CommandResult {
     let commands = &context.cmd_service.commands;
@@ -47,7 +41,7 @@ pub fn device_cmd(context: CommandContext) -> CommandResult {
             println!("{:^15} | {:^10}", "Device Name", "Recording");
             println!("{:-<15}-+-{:-^15}", "", "");
             for gopro in context.devices {
-                println!("{:^15} | {:^10}", gopro.name, if gopro.recording { "✅" } else { "❌" });
+                println!("{:^15} | {:^10}", gopro.wifi_info.ssid, if gopro.recording { "✅" } else { "❌" });
             }
         }
 
@@ -69,10 +63,10 @@ pub fn device_cmd(context: CommandContext) -> CommandResult {
                 ));
             }
             
-            let wifi = access_points.iter().find(|wifi| &wifi.ssid.to_lowercase() == &arg).unwrap();
-            let gopro = GoPro::new(wifi.ssid, wifi);
+            let _wifi = access_points.iter().find(|wifi| &wifi.ssid.to_lowercase() == &arg).unwrap();
+            //let gopro = GoPro::new(wifi);
 
-            context.devices.push(gopro);
+            //context.devices.push(gopro);
         }
 
         "remove" => {
