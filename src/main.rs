@@ -6,7 +6,9 @@ use goprosh::{
     commands::{device_cmd, help_cmd, record_cmd}, gopro::{self, GoPro},
 };
 
-fn main() {
+
+#[tokio::main]
+async fn main() {
     let mut devices: Vec<GoPro> = Vec::new();
     println!();
     println!(
@@ -43,7 +45,7 @@ pub fn init_shell(devices: &mut Vec<GoPro>) {
             args: parts.collect(),
             devices,
             cmd_service: &cmd_service,
-            connector,
+            connector: &connector,
         };
 
         cmd_service.execute(context);

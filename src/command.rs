@@ -13,7 +13,7 @@ pub struct CommandContext<'a> {
     pub args: Vec<&'a str>,
     pub devices: &'a mut Vec<GoPro>,
     pub cmd_service: &'a CommandService,
-    pub connector: WiFi,
+    pub connector: &'a WiFi,
 }
 
 pub struct Command {

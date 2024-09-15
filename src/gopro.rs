@@ -1,9 +1,18 @@
+use tokio_wifiscanner::Wifi;
 use wifi_rs::{self, prelude::{Config, Connectivity, WifiConnectionError}, WiFi};
-use wifiscanner::Wifi;
 
 pub fn init_connector() -> WiFi {
+    let interface_cmd = match sys_info::os_type().unwrap().to_lowercase().as_str() {
+        "linux" => "wlo1",
+        "darwin" => "en0",
+        os => {
+            panic!("Unsupported os: {os}");
+        },
+    };
+
+
     let config = Some(Config {
-        interface: Some("wlo1"),
+        interface: Some(interface_cmd),
     });
 
     WiFi::new(config)
