@@ -7,7 +7,7 @@ use crate::{
 
 use colored::Colorize;
 use futures::executor;
-use tokio_wifiscanner::Wifi;
+use tokio_wifiscanner::Wifi as WifiInfo;
 
 pub fn help_cmd(context: CommandContext) -> CommandResult {
     let commands = &context.cmd_service.commands;
@@ -138,6 +138,6 @@ pub fn record_cmd(_context: CommandContext) -> CommandResult {
     Ok(())
 }
 
-fn scan() -> Vec<Wifi> {
+fn scan() -> Vec<WifiInfo> {
     executor::block_on(tokio_wifiscanner::scan()).expect("Failed to scan wifis")
 }
