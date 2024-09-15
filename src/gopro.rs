@@ -34,7 +34,7 @@ impl<'a> GoPro {
         self.connector.connect(&self.wifi_info.ssid, &password)
     }
 
-    pub fn send_command(_command: GoProCommand) {
+    pub fn send_command(_command: GoProCommand) -> Result<(), ()> {
         todo!("");
     }
 

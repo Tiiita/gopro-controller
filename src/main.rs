@@ -2,7 +2,7 @@ use std::io::{self, Write};
 use colored::Colorize;
 use goprosh::{
     command::{Command, CommandContext, CommandService},
-    commands::{device_cmd, help_cmd, record_cmd}, gopro::{self, GoPro},
+    commands::{device_cmd, help_cmd, record_cmd}, gopro::GoPro,
 };
 
 #[tokio::main(flavor = "current_thread")]
