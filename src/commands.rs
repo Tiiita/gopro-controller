@@ -75,16 +75,23 @@ pub fn device_cmd(context: CommandContext) -> CommandResult {
             }
 
             let wifi = access_points
-                .iter()
-                .find(|wifi| &wifi.ssid.to_lowercase() == &arg)
+                .into_iter()
+                .find(|wifi| wifi.ssid.to_lowercase() == arg)
                 .unwrap();
-            //let gopro = GoPro::new(wifi);
+            let mut gopro = GoPro::new(wifi);
 
             let mut password = String::new();
             println!("Password for gopro '{arg}'");
-            io::stdin().read_line(&mut password).expect("Failed to read line");
-            // gopro.connect(context.connector, password.as_str());
-            //  context.devices.push(gopro);
+            io::stdin()
+                .read_line(&mut password)
+                .expect("Failed to read line");
+
+            match gopro.connect(password.as_str()) {
+                Ok(_) => context.devices.push(gopro),
+                Err(err) => {
+                    eprintln!("{:?}", err);
+                },
+            }
         }
 
         "remove" => {

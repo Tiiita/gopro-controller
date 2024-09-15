@@ -1,13 +1,11 @@
 use std::io::{self, Write};
-
 use colored::Colorize;
 use goprosh::{
     command::{Command, CommandContext, CommandService},
     commands::{device_cmd, help_cmd, record_cmd}, gopro::{self, GoPro},
 };
 
-
-#[tokio::main]
+#[tokio::main(flavor = "current_thread")]
 async fn main() {
     let mut devices: Vec<GoPro> = Vec::new();
     println!();
@@ -21,8 +19,6 @@ async fn main() {
 pub fn init_shell(devices: &mut Vec<GoPro>) {
     let mut cmd_service = CommandService::new();
     register_commands(&mut cmd_service);
-
-    let connector = gopro::init_connector();
 
     loop {
         print!("=> ");
@@ -45,7 +41,6 @@ pub fn init_shell(devices: &mut Vec<GoPro>) {
             args: parts.collect(),
             devices,
             cmd_service: &cmd_service,
-            connector: &connector,
         };
 
         cmd_service.execute(context);

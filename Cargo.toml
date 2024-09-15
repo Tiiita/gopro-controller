@@ -7,6 +7,6 @@ edition = "2021"
 colored = "2.1.0"
 futures = "0.3.30"
 sys-info = "0.9.1"
-tokio = "1.40.0"
+tokio = { version = "1.40.0", features = ["full"] }
 tokio-wifiscanner = "0.2.1"
 wifi-rs = "0.2.4"
