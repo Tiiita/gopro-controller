@@ -1,4 +1,5 @@
 use colored::Colorize;
+use wifi_rs::WiFi;
 
 use crate::gopro::GoPro;
 pub type CommandResult<'a> = Result<(), CommandError<'a>>;
@@ -12,6 +13,7 @@ pub struct CommandContext<'a> {
     pub args: Vec<&'a str>,
     pub devices: &'a mut Vec<GoPro>,
     pub cmd_service: &'a CommandService,
+    pub connector: WiFi,
 }
 
 pub struct Command {

@@ -1,7 +1,7 @@
 use wifi_rs::{self, prelude::{Config, Connectivity, WifiConnectionError}, WiFi};
 use wifiscanner::Wifi;
 
-pub fn init() -> WiFi {
+pub fn init_connector() -> WiFi {
     let config = Some(Config {
         interface: Some("wlo1"),
     });
@@ -16,7 +16,7 @@ pub struct GoPro {
 }
 
 impl<'a> GoPro {
-    pub fn new( wifi_info: Wifi) -> Self {
+    pub fn new(wifi_info: Wifi) -> Self {
         GoPro {
             recording: false,
             mode: None,

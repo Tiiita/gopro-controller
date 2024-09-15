@@ -1,7 +1,10 @@
 
-use crate::command::{CommandContext, CommandError, CommandResult};
+use std::io;
+
+use crate::{command::{CommandContext, CommandError, CommandResult}, gopro::GoPro};
 
 use colored::Colorize;
+use wifiscanner::Wifi;
 
 pub fn help_cmd(context: CommandContext) -> CommandResult {
     let commands = &context.cmd_service.commands;
@@ -63,10 +66,13 @@ pub fn device_cmd(context: CommandContext) -> CommandResult {
                 ));
             }
             
-            let _wifi = access_points.iter().find(|wifi| &wifi.ssid.to_lowercase() == &arg).unwrap();
-            //let gopro = GoPro::new(wifi);
+            let wifi = access_points.iter().find(|wifi| &wifi.ssid.to_lowercase() == &arg).unwrap();
+            let gopro = GoPro::new(wifi);
 
-            //context.devices.push(gopro);
+            let mut password = String::new();
+            io::stdin().read_line(&mut password);
+            gopro.connect(context.connector, password.as_str());
+            context.devices.push(gopro);
         }
 
         "remove" => {

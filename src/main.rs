@@ -3,12 +3,11 @@ use std::io::{self, Write};
 use colored::Colorize;
 use goprosh::{
     command::{Command, CommandContext, CommandService},
-    commands::{device_cmd, help_cmd, record_cmd}, gopro::GoPro,
+    commands::{device_cmd, help_cmd, record_cmd}, gopro::{self, GoPro},
 };
 
 fn main() {
     let mut devices: Vec<GoPro> = Vec::new();
-
     println!();
     println!(
         "Welcome to the gopro controller shell, type {} for help!",
@@ -20,6 +19,8 @@ fn main() {
 pub fn init_shell(devices: &mut Vec<GoPro>) {
     let mut cmd_service = CommandService::new();
     register_commands(&mut cmd_service);
+
+    let connector = gopro::init_connector();
 
     loop {
         print!("=> ");
@@ -42,6 +43,7 @@ pub fn init_shell(devices: &mut Vec<GoPro>) {
             args: parts.collect(),
             devices,
             cmd_service: &cmd_service,
+            connector,
         };
 
         cmd_service.execute(context);
